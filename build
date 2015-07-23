@@ -1,7 +1,11 @@
 #!/bin/bash
-
+#
+# Usage
+# -----
+#
+# By default this will build the debug release
 mkdir -p release
 node_modules/browserify/bin/cmd.js main.jsx \
     -t [babelify --sourceMapRelative .] \
-    --debug \
-    --outfile release/bundle.js
+    --outfile release/bundle.js \
+    --debug
