@@ -1,0 +1,7 @@
+#!/bin/bash
+
+mkdir -p release
+node_modules/browserify/bin/cmd.js main.jsx \
+    -t [babelify --sourceMapRelative .] \
+    --debug \
+    --outfile release/bundle.js
