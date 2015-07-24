@@ -6,6 +6,7 @@ export default class Score extends React.Component {
     return <div id="score">
       <p>Money: <MoneyDisplay value={this.props.money} /></p>
       <p>LOC: { this.props.currentLoc}</p>
+      <p>Tech Debt: { this.props.techDebt} gigaquads</p>
       <p>LOC/second: { this.props.locPerSecond}</p>
       <p>Devs: { this.props.devs}</p>
       <p>Valuation: <MoneyDisplay value={this.props.valuation} /></p>

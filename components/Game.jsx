@@ -76,6 +76,7 @@ export default class Game extends React.Component {
       currentLoc: 0,
       money: 500000,
       ownership: 1,
+      techDebt: 0,
     };
 
     let buildings = {}
@@ -87,13 +88,6 @@ export default class Game extends React.Component {
     this.state.locPerSecond = this.calculateNewLocSpeed(this.state)
 
     this.calculateValuation(this.state, this.state)
-  }
-
-  calculateNewLocSpeed(proposedState) {
-    return (
-      proposedState.buildings['juniorDev'] * 10
-      + proposedState.buildings['seniorDev'] * 30
-    )
   }
 
   componentDidMount() {
@@ -118,6 +112,7 @@ export default class Game extends React.Component {
         valuation={this.state.valuation}
         ownership={this.state.ownership}
         stake={this.state.stake}
+        techDebt={this.state.techDebt}
       />
       {buttons}
       <RaiseCapital
@@ -127,14 +122,26 @@ export default class Game extends React.Component {
     </div>;
   }
 
-  tick() {
-    let elapsed_time = TICK_INTERVAL / 1000 // Number of seconds elapsed
-    
-    let locIncrement = this.state.locPerSecond * elapsed_time
-    let newLoc = this.state.currentLoc + locIncrement
+  calculateNewLocSpeed(proposedState) {
+    let base = (
+      proposedState.buildings['juniorDev'] * 10
+      + proposedState.buildings['seniorDev'] * 30
+    )
+    let techDebtSlowDown = 1 / (Math.max(1, this.state.techDebt))
+    return base * techDebtSlowDown
+  }
 
-    let newState = {currentLoc: newLoc, money: this.state.money}
-    
+
+  tick() {
+    let newState = {
+      money: this.state.money
+    }
+
+    let locs = this.calculateNewLocSpeed(this.state)
+    newState.locPerSecond = locs
+    newState.currentLoc = this.state.currentLoc + locs
+    newState.techDebt = this.state.techDebt + locs / 1234
+
     for (let key in BUILDINGS) {
       newState.money -= this.state.buildings[key] * BUILDINGS[key].salary
     }
@@ -156,7 +163,6 @@ export default class Game extends React.Component {
       proposedState.buildings[key] = this.state.buildings[key]
     }
     proposedState.buildings[key] = this.state.buildings[key] + 1
-    proposedState.locPerSecond = this.calculateNewLocSpeed(proposedState)
 
     this.setState(proposedState)
   }
