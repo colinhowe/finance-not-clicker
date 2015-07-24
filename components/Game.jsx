@@ -5,15 +5,16 @@ import Score from "./Score.jsx"
 const TICK_INTERVAL = 1000
 
 class Building {
-  constructor(name, cost) {
+  constructor(name, cost, valuation) {
     this.name = name
     this.cost = cost
+    this.valuation = valuation
   }
 }
 
 const BUILDINGS = {
-  'juniorDev': new Building('Junior Dev', 100000),
-  'seniorDev': new Building('Senior Dev', 200000),
+  'juniorDev': new Building('Junior Dev', 100000, 110000),
+  'seniorDev': new Building('Senior Dev', 200000, 300000),
 }
 
 
@@ -35,6 +36,7 @@ export default class Game extends React.Component {
     this.state = {
       currentLoc: 0,
       money: 500000,
+      ownership: 1,
     };
 
     let buildings = {}
@@ -44,6 +46,8 @@ export default class Game extends React.Component {
 
     this.state.buildings = buildings
     this.state.locPerSecond = this.calculateNewLocSpeed(this.state)
+
+    this.calculateValuation(this.state, this.state)
   }
 
   calculateNewLocSpeed(proposedState) {
@@ -72,6 +76,9 @@ export default class Game extends React.Component {
         locPerSecond={this.state.locPerSecond}
         devs={this.state.devs}
         money={this.state.money}
+        valuation={this.state.valuation}
+        ownership={this.state.ownership}
+        stake={this.state.stake}
       />
       {buttons}
     </div>;
@@ -83,7 +90,9 @@ export default class Game extends React.Component {
     let locIncrement = this.state.locPerSecond * elapsed_time
     let newLoc = this.state.currentLoc + locIncrement
 
-    this.setState({currentLoc: newLoc})
+    let newState = {currentLoc: newLoc, money: this.state.money}
+    this.calculateValuation(this.state, newState)
+    this.setState(newState)
   }
 
   addBuilding(key) {
@@ -102,5 +111,17 @@ export default class Game extends React.Component {
     proposedState.locPerSecond = this.calculateNewLocSpeed(proposedState)
 
     this.setState(proposedState)
+  }
+
+  calculateValuation(oldState, newState) {
+    newState.valuation = (
+      (newState.money * 0.5)
+      + (newState.currentLoc * 2)
+    )
+    for (let key in BUILDINGS) {
+      newState.valuation += oldState.buildings[key] * BUILDINGS[key].valuation
+    }
+
+    newState.stake = oldState.ownership * newState.valuation
   }
 }
