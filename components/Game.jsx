@@ -1,22 +1,51 @@
 import React from "react"
 
+import MoneyDisplay from "./MoneyDisplay.jsx"
 import Score from "./Score.jsx"
 
 const TICK_INTERVAL = 1000
 
 class Building {
-  constructor(name, cost, valuation) {
+  constructor(name, cost, valuation, salary) {
     this.name = name
     this.cost = cost
     this.valuation = valuation
+    this.salary = salary
   }
 }
 
-const BUILDINGS = {
-  'juniorDev': new Building('Junior Dev', 100000, 110000),
-  'seniorDev': new Building('Senior Dev', 200000, 300000),
+
+class GameState {
+  InProgress: 1
+  OutOfMoney: 2
 }
 
+
+const BUILDINGS = {
+  'juniorDev': new Building('Junior Dev', 50000, 110000, 30),
+  'seniorDev': new Building('Senior Dev', 100000, 300000, 100),
+}
+
+
+class GameData {
+  constructor() {
+    this.state = GameState.InProgress
+  }
+}
+
+const log10 = function(x) {
+  return Math.log(x) / Math.log(10)
+}
+
+function calculateRaiseAmount(valuation) {
+    let value = valuation
+    let digits = Math.floor(log10(value))
+    let amount = (
+        Math.floor(value / Math.pow(10, digits - 1))
+        * Math.pow(10, digits - 2)
+    )
+    return amount
+}
 
 class AddDevButton extends React.Component {
   render() {
@@ -27,6 +56,15 @@ class AddDevButton extends React.Component {
 
   clickHandler() {
     this.props.handler(this.props.buildingKey)
+  }
+}
+
+class RaiseCapital extends React.Component {
+  render() {
+    let amount = calculateRaiseAmount(this.props.valuation)
+    return <div onClick={this.props.handler}>
+      Raise <MoneyDisplay value={amount} />
+    </div>
   }
 }
 
@@ -52,8 +90,8 @@ export default class Game extends React.Component {
 
   calculateNewLocSpeed(proposedState) {
     return (
-      proposedState.buildings['juniorDev'] * 1
-      + proposedState.buildings['seniorDev'] * 3
+      proposedState.buildings['juniorDev'] * 10
+      + proposedState.buildings['seniorDev'] * 30
     )
   }
 
@@ -81,6 +119,10 @@ export default class Game extends React.Component {
         stake={this.state.stake}
       />
       {buttons}
+      <RaiseCapital
+        handler={this.raiseCapital.bind(this)}
+        valuation={this.state.valuation}
+      />
     </div>;
   }
 
@@ -91,6 +133,11 @@ export default class Game extends React.Component {
     let newLoc = this.state.currentLoc + locIncrement
 
     let newState = {currentLoc: newLoc, money: this.state.money}
+    
+    for (let key in BUILDINGS) {
+      newState.money -= this.state.buildings[key] * BUILDINGS[key].salary
+    }
+
     this.calculateValuation(this.state, newState)
     this.setState(newState)
   }
@@ -124,4 +171,16 @@ export default class Game extends React.Component {
 
     newState.stake = oldState.ownership * newState.valuation
   }
+
+  raiseCapital() {
+    let valuation = this.state.valuation
+    let amount = calculateRaiseAmount(valuation)
+    let newValuation = valuation + amount
+    let dilution = valuation / newValuation
+    this.setState({
+      ownership: this.state.ownership * dilution,
+      money: this.state.money + amount,
+    })
+  }
+
 }
