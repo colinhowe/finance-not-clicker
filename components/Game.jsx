@@ -4,6 +4,7 @@ import MoneyDisplay from "./MoneyDisplay.jsx"
 import Score from "./Score.jsx"
 
 const TICK_INTERVAL = 1000
+const VALUE_OF_MONEY = 0.8
 
 class Building {
   constructor(name, cost, valuation, salary) {
@@ -162,8 +163,8 @@ export default class Game extends React.Component {
 
   calculateValuation(oldState, newState) {
     newState.valuation = (
-      (newState.money * 0.5)
-      + (newState.currentLoc * 2)
+      (newState.money * VALUE_OF_MONEY)
+      + (newState.currentLoc * 5)
     )
     for (let key in BUILDINGS) {
       newState.valuation += oldState.buildings[key] * BUILDINGS[key].valuation
@@ -175,7 +176,7 @@ export default class Game extends React.Component {
   raiseCapital() {
     let valuation = this.state.valuation
     let amount = calculateRaiseAmount(valuation)
-    let newValuation = valuation + amount
+    let newValuation = valuation + (amount * VALUE_OF_MONEY)
     let dilution = valuation / newValuation
     this.setState({
       ownership: this.state.ownership * dilution,
