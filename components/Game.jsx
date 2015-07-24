@@ -16,9 +16,9 @@ class Building {
 }
 
 
-class GameState {
-  InProgress: 1
-  OutOfMoney: 2
+const GameState = {
+  InProgress: 1,
+  GameOverNoMoney: 2,
 }
 
 
@@ -69,57 +69,86 @@ class RaiseCapital extends React.Component {
   }
 }
 
+function calculateFireSaleValue(valuation) {
+  return valuation / 2.0
+}
+
 export default class Game extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {
-      currentLoc: 0,
-      money: 500000,
-      ownership: 1,
-      techDebt: 0,
-    };
-
-    let buildings = {}
-    for (let key in BUILDINGS) {
-      buildings[key] = 0
-    }
-
-    this.state.buildings = buildings
-    this.state.locPerSecond = this.calculateNewLocSpeed(this.state)
-
-    this.calculateValuation(this.state, this.state)
+    this.state = this.calculateNewGameState(125000)
   }
 
   componentDidMount() {
     setInterval(this.tick.bind(this), TICK_INTERVAL)
   }
 
-  render() {
-    let buttons = []
-    for (let key in BUILDINGS) {
-      buttons.push(<AddDevButton
-        buildingKey={key}
-        building={BUILDINGS[key]}
-        handler={this.addBuilding.bind(this)}
-      />)
+  calculateNewGameState(money) {
+    let newState = {
+      currentLoc: 0,
+      money: money,
+      ownership: 1,
+      techDebt: 0,
+      gameData: new GameData(),
     }
-    return <div>
-      <Score
-        currentLoc={this.state.currentLoc}
-        locPerSecond={this.state.locPerSecond}
-        devs={this.state.devs}
-        money={this.state.money}
-        valuation={this.state.valuation}
-        ownership={this.state.ownership}
-        stake={this.state.stake}
-        techDebt={this.state.techDebt}
-      />
-      {buttons}
-      <RaiseCapital
-        handler={this.raiseCapital.bind(this)}
-        valuation={this.state.valuation}
-      />
-    </div>;
+    let buildings = {}
+    for (let key in BUILDINGS) {
+      buildings[key] = 0
+    }
+
+    newState.buildings = buildings
+    newState.locPerSecond = this.calculateNewLocSpeed(newState)
+
+    this.calculateValuation(newState, newState)
+    return newState
+  }
+
+  newGame() {
+    this.setState(this.calculateNewGameState(this.state.nextStartingMoney))
+  }
+
+  render() {
+    if (this.state.gameData.state == GameState.GameOverNoMoney) {
+      let moneyRaised = this.state.nextStartingMoney
+      return <div>
+        <h1>Fire sale!</h1>
+        <p>
+        Your company has run out of money. There has been a fire sale
+        of all assets and this raised <MoneyDisplay value={moneyRaised} />.
+        </p>
+        <p>
+          <span onClick={this.newGame.bind(this)}>
+            Onwards and upwards!
+          </span>
+        </p>
+      </div>
+    } else {
+      let buttons = []
+      for (let key in BUILDINGS) {
+        buttons.push(<AddDevButton
+          buildingKey={key}
+          building={BUILDINGS[key]}
+          handler={this.addBuilding.bind(this)}
+        />)
+      }
+      return <div>
+        <Score
+          currentLoc={this.state.currentLoc}
+          locPerSecond={this.state.locPerSecond}
+          devs={this.state.devs}
+          money={this.state.money}
+          valuation={this.state.valuation}
+          ownership={this.state.ownership}
+          stake={this.state.stake}
+          techDebt={this.state.techDebt}
+        />
+        {buttons}
+        <RaiseCapital
+          handler={this.raiseCapital.bind(this)}
+          valuation={this.state.valuation}
+        />
+      </div>
+    }
   }
 
   calculateNewLocSpeed(proposedState) {
@@ -127,7 +156,7 @@ export default class Game extends React.Component {
       proposedState.buildings['juniorDev'] * 10
       + proposedState.buildings['seniorDev'] * 30
     )
-    let techDebtSlowDown = 1 / (Math.max(1, this.state.techDebt))
+    let techDebtSlowDown = 1 / (Math.max(1, proposedState.techDebt))
     return base * techDebtSlowDown
   }
 
@@ -137,16 +166,24 @@ export default class Game extends React.Component {
       money: this.state.money
     }
 
-    let locs = this.calculateNewLocSpeed(this.state)
-    newState.locPerSecond = locs
-    newState.currentLoc = this.state.currentLoc + locs
-    newState.techDebt = this.state.techDebt + locs / 1234
-
     for (let key in BUILDINGS) {
       newState.money -= this.state.buildings[key] * BUILDINGS[key].salary
     }
 
-    this.calculateValuation(this.state, newState)
+    if (newState.money < 0) {
+      // Game over, man!
+      newState.gameData = new Game()
+      newState.gameData.state = GameState.GameOverNoMoney
+      newState.nextStartingMoney = calculateFireSaleValue(this.state.valuation)
+    } else {
+      let locs = this.calculateNewLocSpeed(this.state)
+      newState.locPerSecond = locs
+      newState.currentLoc = this.state.currentLoc + locs
+      newState.techDebt = this.state.techDebt + locs / 1234
+
+      this.calculateValuation(this.state, newState)
+    }
+
     this.setState(newState)
   }
 
